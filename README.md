@@ -2,6 +2,18 @@
 
 SharePoint Server Unauthenticated Remote Code Execution exploit chain.
 
+## Check Demo  
+<img width="1461" height="470" alt="image" src="https://github.com/user-attachments/assets/e65fa2aa-2dd4-485a-a79c-30ef78102b7d" />
+
+## Auto-Pwn Demo  
+<img width="1453" height="638" alt="image" src="https://github.com/user-attachments/assets/559c5064-591c-4ebd-9c0b-e3538fe6074e" />  
+<img width="1448" height="728" alt="image" src="https://github.com/user-attachments/assets/ec33babb-28e3-4d67-8c9c-a189bbc4bab7" />
+
+## Shell Demo  
+<img width="1683" height="787" alt="image" src="https://github.com/user-attachments/assets/2dca6506-77b2-4d17-ae28-06e9d152d37c" />
+<img width="1682" height="792" alt="image" src="https://github.com/user-attachments/assets/7e549e59-e5fb-481d-a990-7dd49029f1d4" />
+
+
 ## Vulnerability Overview
 
 **ToolShell** is a two-bug chain discovered and demonstrated at Pwn2Own Berlin 2025:
@@ -31,7 +43,7 @@ SharePoint Server Unauthenticated Remote Code Execution exploit chain.
 ## Requirements
 
 - Python 3.8+
-- Custom `ysoserial.exe` with DataSetXML gadget (included in ToolShell package)
+- Custom `ysoserial.exe` with DataSetXML gadget from https://github.com/l0ggg/ToolShell
 
 ## Quick Start
 
@@ -278,9 +290,10 @@ SP2016-SERVER
 - Try different gadget if TypeConfuseDelegate fails
 
 ## References
-
-- [Eye Security Research](https://research.eye.security/sharepoint-under-siege/)
-- [Code White GmbH - Pwn2Own Berlin 2025](https://codewhitesec.blogspot.com/)
+- https://blog.viettelcybersecurity.com/sharepoint-toolshell/
+- https://research.eye.security/sharepoint-under-siege/
+- https://github.com/l0ggg/ToolShell
+- https://github.com/irsdl/ysonet
 
 ## Disclaimer
 

