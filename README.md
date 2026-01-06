@@ -31,7 +31,7 @@ SharePoint Server Unauthenticated Remote Code Execution exploit chain.
 ## Requirements
 
 - Python 3.8+
-- Custom `ysoserial.exe` with DataSetXML gadget (included in ToolShell package)
+- Custom `ysoserial.exe` with DataSetXML gadget from https://github.com/l0ggg/ToolShell
 
 ## Quick Start
 
