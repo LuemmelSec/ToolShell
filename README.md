@@ -1,4 +1,4 @@
-# ToolShell Exploit - CVE-2025-49706 + CVE-2025-49704 & Bypass CVE-2025-53770
+# ToolShell Exploit - CVE-2025-49706 + CVE-2025-49704
 
 SharePoint Server Unauthenticated Remote Code Execution exploit chain.
 
@@ -278,10 +278,9 @@ SP2016-SERVER
 - Try different gadget if TypeConfuseDelegate fails
 
 ## References
-- https://blog.viettelcybersecurity.com/sharepoint-toolshell/
-- https://research.eye.security/sharepoint-under-siege/
-- https://github.com/l0ggg/ToolShell
-- https://github.com/irsdl/ysonet
+
+- [Eye Security Research](https://research.eye.security/sharepoint-under-siege/)
+- [Code White GmbH - Pwn2Own Berlin 2025](https://codewhitesec.blogspot.com/)
 
 ## Disclaimer
 
