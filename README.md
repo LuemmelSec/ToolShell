@@ -278,9 +278,10 @@ SP2016-SERVER
 - Try different gadget if TypeConfuseDelegate fails
 
 ## References
-
-- [Eye Security Research](https://research.eye.security/sharepoint-under-siege/)
-- [Code White GmbH - Pwn2Own Berlin 2025](https://codewhitesec.blogspot.com/)
+- https://blog.viettelcybersecurity.com/sharepoint-toolshell/
+- https://research.eye.security/sharepoint-under-siege/
+- https://github.com/l0ggg/ToolShell
+- https://github.com/irsdl/ysonet
 
 ## Disclaimer
 
